@@ -1,7 +1,6 @@
 <template>
   <div id="app" class="theme--light application--is-rtl">
-    <img src="./assets/logo.png">
-    <studyTable msg="Welcome to Your Vue.js App"/>
+    <studyTable/>
   </div>
 </template>
 
