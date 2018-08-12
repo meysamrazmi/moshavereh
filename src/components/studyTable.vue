@@ -1,6 +1,6 @@
 <template>
 <div>
-  <v-container>
+  <v-container >
     <v-layout column>
       <v-flex xs2 offset-xs10>
         <v-select
@@ -29,8 +29,9 @@
         height="3"
         ></v-progress-linear>
       
-      <!-- rows -->
-      <div v-for="(item, cid) in courses" :key="item">
+      
+      <!-- rows -->{{rowsModelEnable.length}}
+      <div v-for="(item, cid) in courses" :key="item" v-if="rowsModelEnable.length > 2">
         <v-layout align-center justify-start class="text-xs-right">
           <v-flex style="padding: 10px;" xs2>{{item}}</v-flex>
 
@@ -69,11 +70,16 @@
 
     </v-flex>
 
-    <v-flex xs12 class="student-desc" @click="toggle(6, 0, $event)">
+    <v-flex xs12 class="student-desc description-area" @click="toggle(6, 0, $event)">
       <v-subheader >
+        <v-icon light>format_quote</v-icon>
         توضیحات تکمیلی این هفته
+
+        <v-btn color="purple" dark icon flat v-if="rowsModelEnable[6][0]" style="opacity: 0;">
+          <v-icon light>edit</v-icon>
+        </v-btn>
       </v-subheader>
-      <div class="desc-data text-xs-right" v-if="rowsModelEnable[6][0]">{{rowsModel[6][0]}}</div>
+      <div class="desc-data text-xs-right description-text" v-if="rowsModelEnable[6][0]">{{rowsModel[6][0]}}</div>
       
       <v-textarea
         label="توضیحات تکمیلی این هفته"
@@ -94,15 +100,21 @@
       
       <v-btn 
         color="info" small absolute
+        class="send-btn"
         @click="setfield(6, 0, $event.target.parentNode.parentNode.getElementsByTagName('textarea')[0].value)"
         v-if="!rowsModelEnable[6][0]"
       >ذخیره</v-btn>
 
     </v-flex>
 
-    <v-flex xs12 class="teacher-desc" @click="toggle(7, 0, $event)">
+    <v-flex xs12 class="teacher-desc description-area" @click="toggle(7, 0, $event)">
       <v-subheader >
+        <v-icon light>thumbs_up_down</v-icon>
         بازخورد مشاور
+
+        <v-btn color="purple" dark icon flat v-if="rowsModelEnable[7][0]" style="opacity: 0;">
+          <v-icon light>edit</v-icon>
+        </v-btn>
       </v-subheader>
       <div class="desc-data text-xs-right" v-if="rowsModelEnable[7][0]">{{rowsModel[7][0]}}</div>
       
@@ -123,6 +135,14 @@
           height="3"
           ></v-progress-linear>     
       </v-textarea>
+
+      <v-btn 
+        color="info" small absolute
+        class="send-btn"
+        @click="setfield(7, 0, $event.target.parentNode.parentNode.getElementsByTagName('textarea')[0].value)"
+        v-if="!rowsModelEnable[7][0]"
+      >ذخیره</v-btn>
+
     </v-flex>
 
     </v-layout>
@@ -130,10 +150,10 @@
   
   <v-snackbar
     v-model="snackbar"
-    :color="success"
+    :color="snackbarColor"
     :timeout="6000">
     {{ snackbarText }}
-    <v-btn dark flat @click="snackbar = false">بستن</v-btn>
+    <v-btn style="background: rgba(255, 255, 255, 0.25); 	margin-right: 15px;" icon dark @click="snackbar = false"><v-icon dark>close</v-icon></v-btn>
   </v-snackbar>
 
 </div>
@@ -146,7 +166,6 @@ export default {
   name: 'studyTable',
   data() {
     return {
-      success: 'success',
       loading : true,
       week : [
         'sat',
@@ -170,11 +189,13 @@ export default {
       rowsModel : [],
       rowsModelEnable : [],
       result : [],
+      inputLoading: false,
+      weeks: [1],
+      selectedWeek:1,
+      //snackbar section
       snackbar : false,
       snackbarText : '',
-      inputLoading: false,
-      weeks: [1,2],
-      selectedWeek:1,
+      snackbarColor : 'success',
       //description section
       studentDesc: "توضیحات مربوط به این هفته ی خود را در این قسمت برای مشاور بنویسید.",
       teacherDesc: '',
@@ -182,10 +203,19 @@ export default {
     }
   },
   mounted() {
+    this.updateWeeks()
     this.update()
   },
+  created(){
+    // axios.get('http://civil808.com/user/get_uid')
+    //   .then(response => response.data)
+    //   .then((data) => {
+    //     console.log(data)
+    //     this.uid = data
+    //   })
+  },
   computed:{
-    headers: function(){
+    headers(){
       var temp = [{ text: 'دروس', value: 'courses', width: 2}]
       this.week.map((Key) => {
         temp.push({ text: this.day_names(Key), value: Key , width: 1})
@@ -211,6 +241,7 @@ export default {
         else return value
     },
     toggle(cid, did, e) {
+      if(did == 7) return
       var prev = false
       var waiting = 1000
 
@@ -268,6 +299,7 @@ export default {
         }else{
           this.snackbar = true
           this.snackbarText = 'failed'
+          this.snackbarColor = 'error'
         }
         this.$set(this.rowsModelEnable[cid], did, true)
         this.updateVals(cid,did)
@@ -305,6 +337,12 @@ export default {
       e.target.nextSibling.getElementsByTagName('input')[0].focus()
     },
     update(){
+      if(this.uid == 0){
+        this.snackbar = true
+        this.snackbarText = 'خطایی در رابطه با کاربر پیش آمده است'
+        this.snackbarColor = 'error'
+        return
+      } 
       this.loading = true
       this.rowsModelEnable = [...Array(8)].map(e => Array(9).fill(true))
       axios.get('http://civil808.com/user/'+ this.uid +'/moshavereh', {
@@ -369,7 +407,19 @@ export default {
         this.rowsModel = dataModel
         this.loading = false
       })
-    }
+    },
+    updateWeeks(){
+      axios.get('http://civil808.com/user/'+ this.uid +'/moshavereh/weeks')
+      .then(response => response.data)
+      .then((data) => {
+        console.log(data)
+        var tmp = []
+        for(var i = 1; i <= data; i++)
+          tmp.push(i)
+
+        this.weeks = tmp
+      })
+    },
   },
   filters:{
     xs_ : function (value) {
@@ -448,12 +498,33 @@ textarea {
 .v-subheader {
 	cursor: pointer;
 }
-.student-desc {
+.description-area {
 	position: relative;
 }
-.student-desc button {
+button.send-btn {
 	position: absolute !important;
 	background: #2196F3 !important;
   left: 0;
+}
+.description-text {
+	padding: 14px 10px 5px;
+}
+.description-area:hover .v-btn--flat {
+  opacity: 1 !important;
+}
+.v-subheader {
+	position: relative;
+}
+.v-subheader:before {
+	content: "";
+	width: 53px;
+	position: absolute;
+	height: 2px;
+	background: #FF5722;
+	bottom: 6px;
+	right: 0;
+}
+.v-subheader > i {
+	margin-left: 17px;
 }
 </style>
