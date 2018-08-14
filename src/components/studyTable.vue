@@ -30,7 +30,7 @@
         ></v-progress-linear>
       
       
-      <!-- rows -->{{rowsModelEnable.length}}
+      <!-- rows -->
       <div v-for="(item, cid) in courses" :key="item" v-if="rowsModelEnable.length > 2">
         <v-layout align-center justify-start class="text-xs-right">
           <v-flex style="padding: 10px;" xs2>{{item}}</v-flex>
@@ -68,10 +68,16 @@
         <v-divider></v-divider>
       </div>
 
+      <v-btn 
+        color="error" small absolute
+        class="cancel-btn"
+        @click="cancelToggle()"
+        v-if="gcid > -1 && gcid < 6"
+        >لغو</v-btn>
     </v-flex>
 
-    <v-flex xs12 class="student-desc description-area" @click="toggle(6, 0, $event)">
-      <v-subheader >
+    <v-flex xs12 class="student-desc description-area">
+      <v-subheader  @click="toggle(6, 0, $event)">
         <v-icon light>format_quote</v-icon>
         توضیحات تکمیلی این هفته
 
@@ -97,7 +103,13 @@
           height="3"
           ></v-progress-linear>     
       </v-textarea>
-      
+
+      <v-btn 
+        small absolute flat
+        class="cancel-btn"
+        @click="cancelToggle()"
+        v-if="!rowsModelEnable[6][0]"
+        >لغو</v-btn>
       <v-btn 
         color="info" small absolute
         class="send-btn"
@@ -107,8 +119,8 @@
 
     </v-flex>
 
-    <v-flex xs12 class="teacher-desc description-area" @click="toggle(7, 0, $event)">
-      <v-subheader >
+    <v-flex xs12 class="teacher-desc description-area">
+      <v-subheader  @click="toggle(7, 0, $event)">
         <v-icon light>thumbs_up_down</v-icon>
         بازخورد مشاور
 
@@ -136,6 +148,12 @@
           ></v-progress-linear>     
       </v-textarea>
 
+      <v-btn 
+        small absolute flat
+        class="cancel-btn"
+        @click="cancelToggle()"
+        v-if="!rowsModelEnable[7][0]"
+        >لغو</v-btn>
       <v-btn 
         color="info" small absolute
         class="send-btn"
@@ -188,6 +206,8 @@ export default {
       rows : [],
       rowsModel : [],
       rowsModelEnable : [],
+      gcid : -1,
+      gdid : -1,
       result : [],
       inputLoading: false,
       weeks: [1],
@@ -263,9 +283,16 @@ export default {
       //wait for previuse loading to finish
       //this is for prevent appearing loading bar in the newly clicked text field
       if(prev)
-        setTimeout(()=>{this.$set(this.rowsModelEnable[cid], did, false)},waiting)
-      else
+        setTimeout(()=>{
+          this.$set(this.rowsModelEnable[cid], did, false)
+          this.gcid = cid
+          this.gdid = did
+        },waiting)
+      else{
         this.$set(this.rowsModelEnable[cid], did, false)
+        this.gcid = cid
+        this.gdid = did
+      }
 
       var inputs = e.target.parentNode.getElementsByTagName('input')
       var textareas = e.target.parentNode.getElementsByTagName('textarea')
@@ -274,8 +301,18 @@ export default {
         if(textareas.length) textareas[0].focus()
       },30)
     },
+    cancelToggle(){
+      this.rowsModelEnable.map((course, c) => {
+        course.map((day, d) => {
+          if(this.rowsModelEnable[c][d] == false){
+              this.$set(this.rowsModelEnable[c], d, true)
+          }
+        })
+      })
+      this.gcid = -1
+      this.gdid = -1
+    },
     setfield(cid, did, val){
-      console.log(val)
       this.inputLoading = true
       var rawData = {
         value: val,
@@ -302,6 +339,12 @@ export default {
           this.snackbarColor = 'error'
         }
         this.$set(this.rowsModelEnable[cid], did, true)
+        
+        //only if user pressed enter we should close cancle button
+        if(this.gcid == cid && this.gdid == did){
+          this.gcid = -1
+          this.gdid = -1
+        }
         this.updateVals(cid,did)
       })
 
@@ -412,7 +455,6 @@ export default {
       axios.get('http://civil808.com/user/'+ this.uid +'/moshavereh/weeks')
       .then(response => response.data)
       .then((data) => {
-        console.log(data)
         var tmp = []
         for(var i = 1; i <= data; i++)
           tmp.push(i)
@@ -443,8 +485,8 @@ export default {
 	border-color: #8c9eff !important;
 }
 .error {
-	background-color: #b71c1c !important;
-	border-color: #b71c1c !important;
+  background-color: #ff5252 !important;
+	border-color: #ff5252 !important;
 }
 .success {
 	background-color: #4CAF50 !important;
@@ -527,4 +569,16 @@ button.send-btn {
 .v-subheader > i {
 	margin-left: 17px;
 }
+.cancel-btn {
+	left: 95px;
+}
+.table-data {
+	position: relative;
+}
+.table-data .cancel-btn {
+	left: 0;
+	margin-top: 5px;
+	z-index: 2;
+}
+
 </style>
