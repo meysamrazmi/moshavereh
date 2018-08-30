@@ -16,12 +16,6 @@ export default {
 </script>
 
 <style>
-@font-face {
-    font-family: 'Material Icons';
-    font-style: normal;
-    font-weight: 400;
-    src: url(/fonts/material.woff2) format('woff2');
-}
 #app {
   font-family: iransans;
   -webkit-font-smoothing: antialiased;
@@ -46,5 +40,39 @@ body{
 }
 label {
 	font-size: 14px;
+}
+.v-select__selections input[type="text"] {
+	visibility: hidden;
+}
+hr.v-divider {
+	margin: 0;
+}
+.v-input__slot input, .v-input__slot input:focus, .v-input__slot input:hover {
+	margin: 0;
+	border: none !important;
+	box-shadow: none !important;
+}
+.v-input__slot input[disabled]{
+  background: transparent;
+}
+.v-input__slot textarea{
+  outline: none !important;
+  box-shadow: none !important;
+}
+.cancel-btn.v-btn {
+	color: #555 !important;
+  box-shadow: none;
+}
+.cancel-btn.v-btn:hover {
+	background: #eee !important;
+}
+.description-area .v-btn {
+	background: transparent;
+}
+.table-data .cancel-btn.v-btn:hover {
+	background: #ff5252 !important;
+}
+.table-data .cancel-btn.v-btn {
+	color: #fff !important;
 }
 </style>

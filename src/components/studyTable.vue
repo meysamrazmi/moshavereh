@@ -31,7 +31,7 @@
       
       
       <!-- rows -->
-      <div v-for="(item, cid) in courses" :key="item" v-if="rowsModelEnable.length > 2">
+      <div v-for="(item, cid) in courses" :key="item" v-if="rowsModelEnable.length > 2" :class="'row' + cid">
         <v-layout align-center justify-start class="text-xs-right">
           <v-flex style="padding: 10px;" xs2>{{item}}</v-flex>
 
@@ -72,7 +72,7 @@
         color="error" small absolute
         class="cancel-btn"
         @click="cancelToggle()"
-        v-if="gcid > -1 && gcid < 6"
+        v-if="(gcid > -1 && gcid < 6) || gcid == 8"
         >لغو</v-btn>
     </v-flex>
 
@@ -124,7 +124,7 @@
         <v-icon light>thumbs_up_down</v-icon>
         بازخورد مشاور
 
-        <v-btn color="purple" dark icon flat v-if="rowsModelEnable[7][0]" style="opacity: 0;">
+        <v-btn color="purple" dark icon flat v-if="rowsModelEnable[7][0] && this.isAdmin" style="opacity: 0;">
           <v-icon light>edit</v-icon>
         </v-btn>
       </v-subheader>
@@ -202,7 +202,7 @@ export default {
         'تحلیل سازه ها', 
         'جمع کل مطالعات هفتگی'
       ],
-      uid : 3300,
+      uid : 0,
       rows : [],
       rowsModel : [],
       rowsModelEnable : [],
@@ -219,20 +219,23 @@ export default {
       //description section
       studentDesc: "توضیحات مربوط به این هفته ی خود را در این قسمت برای مشاور بنویسید.",
       teacherDesc: '',
-      descLoading : false
+      descLoading : false,
+      isAdmin : false
     }
   },
   mounted() {
-    this.updateWeeks()
-    this.update()
+    this.start()
   },
   created(){
-    // axios.get('http://civil808.com/user/get_uid')
-    //   .then(response => response.data)
-    //   .then((data) => {
-    //     console.log(data)
-    //     this.uid = data
-    //   })
+    axios.get('http://civil808.com/user/get_uid')
+      .then(response => response.data)
+      .then((data) => {
+        console.log(data)
+        this.uid = data.uid
+        if(data.roles.hasOwnProperty('3') || data.roles.hasOwnProperty('9') || data.roles.hasOwnProperty('10')){
+          this.isAdmin = true
+        }
+      })
   },
   computed:{
     headers(){
@@ -262,6 +265,7 @@ export default {
     },
     toggle(cid, did, e) {
       if(did == 7) return
+      if(cid == 7 && !this.isAdmin) return
       var prev = false
       var waiting = 1000
 
@@ -364,7 +368,7 @@ export default {
       this.rowsModel.map((course, c)=>{
         if(c < 5 ){ //last item
           course.map((day, d)=>{
-            if(d < 7 && did == d) //last item
+            if((d < 7 || d > 7) && did == d) //last item
               sum += parseInt(day)
             else if(7 == d)
               total += parseInt(day)
@@ -387,7 +391,7 @@ export default {
         return
       } 
       this.loading = true
-      this.rowsModelEnable = [...Array(8)].map(e => Array(9).fill(true))
+      this.rowsModelEnable = [...Array(8)].map(e => Array(10).fill(true))
       axios.get('http://civil808.com/user/'+ this.uid +'/moshavereh', {
         params: {
           week: this.selectedWeek
@@ -396,10 +400,11 @@ export default {
       .then(response => response.data)
       .then((data) => {
         var col = []
-        var dataModel = [...Array(8)].map(e => Array(9).fill("0"))
+        var examCol = []
+        var dataModel = [...Array(8)].map(e => Array(10).fill("0"))
         
         if(data.length > 0){
-          var index = 0
+          var index = 0, examIndex = 0
           Object.keys(data[0]).map((key) => {
             var val = data[0][key]
             if(key == 'sat' || key == 'sun' || key == 'mon' || key == 'tue' || key == 'wed' || key == 'thu' || key == 'fri'){
@@ -417,12 +422,22 @@ export default {
             if(key == 'teacher_eval'){
               dataModel[7][0] = val
             }
+            if(key == 'examTrue' || key == 'examFalse'){
+              examCol[examIndex] = val.split("@")
+              var cSum = 0
+              examCol[examIndex].map(v => {
+                cSum += parseInt(v)
+              })
+              examCol[examIndex].push(cSum)
+              examIndex++
+            }
           });
         }else{
           col = [...Array(8)].map(e => Array(6).fill("0"))
+          examCol = [...Array(2)].map(e => Array(6).fill("0"))
         }
 
-        var temp = [[],[],[],[],[],[]]
+        var temp = [[],[],[],[],[],[]] //for courses
         col.map((day, did)=>{
           day.map((course, cid)=>{
             temp[cid].push({val: course, width: 1, key: "" + did + cid})
@@ -432,6 +447,7 @@ export default {
 
         var sum = 0
         if(data.length > 0){
+          //adding each courses total
           temp.map((course, cid)=>{
             sum = 0
             course.map((day)=>{
@@ -440,9 +456,14 @@ export default {
             var did = course.length 
             temp[cid].push({val: sum, width: 2, key: "" + did + cid})
             dataModel[cid][did] = sum
-            did++
-            temp[cid].push({val: '', width: 1, key: "" + did + cid})
-            dataModel[cid][did] = ''
+          })
+
+          examCol.map((exam, did)=>{
+            exam.map((course, cid)=>{
+              var realdid = did + 8
+              temp[cid].push({val: course, width: 0, key: "" + realdid + cid})
+              dataModel[cid][realdid] = course
+            })
           })
         }
 
@@ -462,6 +483,16 @@ export default {
         this.weeks = tmp
       })
     },
+    start(){
+      if(this.uid == 0){
+        setTimeout(()=>{
+          this.start()
+        },1000)
+      }else{
+        this.updateWeeks()
+        this.update()
+      }
+    }
   },
   filters:{
     xs_ : function (value) {
@@ -517,6 +548,28 @@ a {
 .table-data .v-input__slot {
 	width: 50px;
 	margin: 0 auto;
+}
+.table-data .xs0 .v-input__slot {
+	margin: 0;
+}
+.xs0 {
+	width: 45px;
+}
+.table-data .row5 .xs0:nth-child(10) span:before {
+	content: "check_circle_outline";
+	font-family: material icons;
+	font-size: 22px;
+	position: absolute;
+	margin: 0 -30px 0 0;
+	color: #4CAF50;
+}
+.table-data .row5 .xs0:nth-child(11) span:before {
+	content: "highlight_off";
+	font-family: material icons;
+	font-size: 22px;
+	position: absolute;
+	margin: 0px 20px 0 0;
+	color: #F44336;
 }
 .v-snack__content .v-btn:first-of-type {
 	margin: 0;
@@ -580,5 +633,7 @@ button.send-btn {
 	margin-top: 5px;
 	z-index: 2;
 }
-
+.v-select-list .v-list__tile__title {
+	text-align: right;
+}
 </style>
