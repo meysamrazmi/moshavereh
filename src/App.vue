@@ -18,27 +18,15 @@ export default {
 <style>
 #app {
   font-family: iransans;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
   padding-bottom: 50px;
+  margin-top: 20px;
+  min-width: 1000px;
 }
-body{
-    margin: 0px;
-    width: 100%;
-	font-family: iransans !important;
+#app .inner{
+  max-width: 1100px;
+  margin: auto;
 }
-#app {
-    margin-top: 20px;
-    min-width: 1000px;
-}
-.inner{
-    max-width: 1100px;
-    margin: auto;
-}
-label {
+#app label {
 	font-size: 14px;
 }
 .v-select__selections input[type="text"] {
